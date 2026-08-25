@@ -1,0 +1,4687 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color"
+          content="#16833f">
+
+    <title>Plant Disease AI | Smart Plant Health</title>
+
+    <meta name="description"
+          content="AI-powered plant disease detection using image analysis.">
+
+    <style>
+
+        /* =====================================================
+           GLOBAL
+        ===================================================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        :root {
+            --green: #16833f;
+            --green-dark: #0f672f;
+            --green-light: #e4f5e8;
+            --green-soft: #f0f8f2;
+
+            --bg: #f7faf7;
+            --card: #ffffff;
+            --text: #17351f;
+            --muted: #718078;
+            --border: #e1ece4;
+
+            --shadow: 0 15px 40px rgba(26,80,42,0.09);
+        }
+
+        body.dark {
+            --bg: #101712;
+            --card: #172019;
+            --text: #eaf5ec;
+            --muted: #a9b8ad;
+            --border: #2a3a2e;
+            --green-soft: #19291e;
+
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        body {
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: var(--bg);
+            color: var(--text);
+
+            line-height: 1.6;
+
+            transition:
+                background 0.3s,
+                color 0.3s;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        button,
+        input {
+            font-family: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+
+        /* =====================================================
+           NAVBAR
+        ===================================================== */
+
+        .navbar {
+            position: sticky;
+            top: 0;
+
+            z-index: 5000;
+
+            width: 100%;
+
+            background: rgba(255,255,255,0.94);
+
+            border-bottom:
+                1px solid var(--border);
+
+            backdrop-filter: blur(15px);
+        }
+
+        body.dark .navbar {
+            background: rgba(16,23,18,0.94);
+        }
+
+        .nav-container {
+            max-width: 1250px;
+
+            margin: auto;
+
+            padding:
+                14px 22px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 21px;
+
+            font-weight: 800;
+
+            color: var(--green);
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+        }
+
+        .nav-links {
+            display: flex;
+
+            align-items: center;
+
+            gap: 22px;
+        }
+
+        .nav-links a {
+            font-size: 14px;
+
+            font-weight: 700;
+
+            color: var(--text);
+
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--green);
+        }
+
+        .nav-actions {
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 10px;
+
+            background: var(--card);
+
+            color: var(--text);
+
+            font-size: 17px;
+        }
+
+        .lang-btn {
+            padding: 9px 12px;
+
+            border:
+                1px solid var(--border);
+
+            background: var(--card);
+
+            color: var(--text);
+
+            border-radius: 9px;
+
+            font-weight: 700;
+        }
+
+        .nav-btn {
+            background: var(--green);
+
+            color: white !important;
+
+            padding:
+                10px 16px;
+
+            border-radius: 9px;
+        }
+
+
+        /* =====================================================
+           HERO
+        ===================================================== */
+
+        .hero {
+            min-height: 650px;
+
+            display: flex;
+
+            align-items: center;
+
+            background:
+                radial-gradient(
+                    circle at top right,
+                    #dff5e5 0%,
+                    transparent 35%
+                ),
+                linear-gradient(
+                    135deg,
+                    #f5fbf6,
+                    #edf8ef
+                );
+        }
+
+        body.dark .hero {
+            background:
+                radial-gradient(
+                    circle at top right,
+                    #1b4026,
+                    transparent 35%
+                ),
+                #101712;
+        }
+
+        .hero-container {
+            max-width: 1250px;
+
+            width: 100%;
+
+            margin: auto;
+
+            padding:
+                80px 25px;
+
+            display: grid;
+
+            grid-template-columns:
+                1.1fr 0.9fr;
+
+            gap: 60px;
+
+            align-items: center;
+        }
+
+        .badge {
+            display: inline-block;
+
+            padding:
+                8px 15px;
+
+            border-radius: 30px;
+
+            background:
+                var(--green-light);
+
+            color:
+                var(--green);
+
+            font-size: 13px;
+
+            font-weight: 800;
+
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            font-size:
+                clamp(42px, 6vw, 68px);
+
+            line-height: 1.08;
+
+            margin-bottom: 22px;
+        }
+
+        .hero h1 span {
+            color: var(--green);
+        }
+
+        .hero p {
+            font-size: 18px;
+
+            color: var(--muted);
+
+            max-width: 650px;
+
+            margin-bottom: 30px;
+        }
+
+        .hero-buttons {
+            display: flex;
+
+            gap: 12px;
+
+            flex-wrap: wrap;
+        }
+
+        .primary-btn,
+        .secondary-btn {
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding:
+                14px 22px;
+
+            border-radius: 11px;
+
+            font-weight: 800;
+
+            transition: 0.3s;
+        }
+
+        .primary-btn {
+            background: var(--green);
+
+            color: white;
+
+            border:
+                2px solid var(--green);
+        }
+
+        .primary-btn:hover {
+            background: var(--green-dark);
+
+            transform:
+                translateY(-2px);
+        }
+
+        .secondary-btn {
+            background: var(--card);
+
+            color: var(--green);
+
+            border:
+                2px solid var(--border);
+        }
+
+        .secondary-btn:hover {
+            border-color:
+                var(--green);
+        }
+
+
+        /* =====================================================
+           HERO AI CARD
+        ===================================================== */
+
+        .hero-card {
+            background: var(--card);
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 25px;
+
+            padding: 22px;
+
+            box-shadow:
+                0 25px 70px
+                rgba(26,80,42,0.12);
+        }
+
+        .hero-visual {
+            height: 340px;
+
+            border-radius: 20px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #dff3e3,
+                    #f7fcf7
+                );
+
+            position: relative;
+
+            overflow: hidden;
+        }
+
+        .hero-leaf {
+            font-size: 145px;
+
+            animation:
+                floatLeaf 4s ease-in-out infinite;
+        }
+
+        @keyframes floatLeaf {
+
+            0% {
+                transform:
+                    translateY(0)
+                    rotate(-3deg);
+            }
+
+            50% {
+                transform:
+                    translateY(-12px)
+                    rotate(3deg);
+            }
+
+            100% {
+                transform:
+                    translateY(0)
+                    rotate(-3deg);
+            }
+        }
+
+        .ai-status {
+            position: absolute;
+
+            right: 18px;
+            top: 18px;
+
+            background: white;
+
+            padding:
+                9px 13px;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(0,0,0,0.08);
+
+            font-size: 12px;
+
+            font-weight: 800;
+
+            color: var(--green);
+        }
+
+        .hero-card-info {
+            padding:
+                18px 5px 5px;
+        }
+
+        .hero-card-info p {
+            font-size: 14px;
+
+            margin: 4px 0 0;
+        }
+
+
+        /* =====================================================
+           STATS
+        ===================================================== */
+
+        .stats {
+            max-width: 1100px;
+
+            margin:
+                -45px auto 40px;
+
+            padding:
+                0 20px;
+
+            position: relative;
+
+            z-index: 10;
+        }
+
+        .stats-grid {
+            background: var(--card);
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 18px;
+
+            box-shadow: var(--shadow);
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(4,1fr);
+
+            padding: 23px;
+        }
+
+        .stat {
+            text-align: center;
+
+            padding: 10px;
+
+            border-right:
+                1px solid var(--border);
+        }
+
+        .stat:last-child {
+            border-right: none;
+        }
+
+        .stat h2 {
+            color: var(--green);
+
+            font-size: 28px;
+        }
+
+        .stat p {
+            color: var(--muted);
+
+            font-size: 13px;
+        }
+
+
+        /* =====================================================
+           COMMON SECTIONS
+        ===================================================== */
+
+        .section {
+            max-width: 1250px;
+
+            margin: auto;
+
+            padding:
+                85px 25px;
+        }
+
+        .section-heading {
+            text-align: center;
+
+            margin-bottom: 45px;
+        }
+
+        .section-heading span {
+            color: var(--green);
+
+            font-weight: 800;
+
+            font-size: 13px;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+        }
+
+        .section-heading h2 {
+            font-size: 38px;
+
+            margin:
+                8px 0;
+        }
+
+        .section-heading p {
+            max-width: 680px;
+
+            margin: auto;
+
+            color: var(--muted);
+        }
+
+
+        /* =====================================================
+           SCANNER
+        ===================================================== */
+
+        .detect-section {
+            background:
+                var(--card);
+        }
+
+        .scanner-wrapper {
+            max-width: 900px;
+
+            margin: auto;
+        }
+
+        .scanner-card {
+            background: var(--bg);
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 25px;
+
+            padding: 30px;
+
+            box-shadow: var(--shadow);
+        }
+
+        .drop-zone {
+            border:
+                2px dashed #b9d9c1;
+
+            border-radius: 20px;
+
+            padding: 40px 25px;
+
+            text-align: center;
+
+            transition: 0.3s;
+
+            background:
+                var(--card);
+        }
+
+        .drop-zone.dragging {
+            border-color:
+                var(--green);
+
+            background:
+                var(--green-light);
+
+            transform:
+                scale(1.01);
+        }
+
+        .scanner-icon {
+            width: 75px;
+            height: 75px;
+
+            margin:
+                auto auto 16px;
+
+            border-radius: 50%;
+
+            background:
+                var(--green-light);
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 32px;
+        }
+
+        .drop-zone h3 {
+            font-size: 23px;
+
+            margin-bottom: 6px;
+        }
+
+        .drop-zone p {
+            color: var(--muted);
+
+            font-size: 14px;
+
+            margin-bottom: 22px;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .scanner-buttons {
+            display: flex;
+
+            justify-content: center;
+
+            gap: 10px;
+
+            flex-wrap: wrap;
+        }
+
+        .scan-btn {
+            border: none;
+
+            border-radius: 10px;
+
+            padding:
+                13px 19px;
+
+            font-weight: 800;
+
+            font-size: 14px;
+        }
+
+        .scan-upload {
+            background:
+                var(--green);
+
+            color: white;
+        }
+
+        .scan-camera {
+            background:
+                var(--green-light);
+
+            color:
+                var(--green);
+        }
+
+        .scan-history-btn {
+            background:
+                var(--card);
+
+            color:
+                var(--text);
+
+            border:
+                1px solid var(--border);
+        }
+
+
+        /* =====================================================
+           PREVIEW
+        ===================================================== */
+
+        .preview-area {
+            display: none;
+
+            margin-top: 25px;
+        }
+
+        .preview-layout {
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 20px;
+
+            align-items: center;
+        }
+
+        .preview-box {
+            position: relative;
+
+            background:
+                #111;
+
+            border-radius: 18px;
+
+            overflow: hidden;
+
+            min-height: 260px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+        }
+
+        #previewImage {
+            max-width: 100%;
+
+            max-height: 350px;
+
+            display: block;
+
+            object-fit: contain;
+
+            transition:
+                transform 0.3s;
+        }
+
+        .preview-info {
+            padding: 5px;
+        }
+
+        .file-name {
+            font-size: 14px;
+
+            color: var(--muted);
+
+            word-break: break-word;
+
+            margin-bottom: 15px;
+        }
+
+        .quality-card {
+            background:
+                var(--card);
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 15px;
+
+            padding: 18px;
+
+            margin-bottom: 15px;
+        }
+
+        .quality-header {
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            margin-bottom: 8px;
+        }
+
+        .quality-score {
+            font-weight: 900;
+
+            color: var(--green);
+        }
+
+        .quality-bar {
+            height: 8px;
+
+            background:
+                var(--border);
+
+            border-radius: 20px;
+
+            overflow: hidden;
+        }
+
+        .quality-fill {
+            height: 100%;
+
+            width: 0%;
+
+            background:
+                var(--green);
+
+            border-radius: 20px;
+
+            transition:
+                width 0.5s;
+        }
+
+        .quality-message {
+            margin-top: 9px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+        }
+
+        .edit-tools {
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 8px;
+        }
+
+        .tool-btn {
+            border:
+                1px solid var(--border);
+
+            background:
+                var(--card);
+
+            color:
+                var(--text);
+
+            border-radius: 9px;
+
+            padding:
+                9px 12px;
+
+            font-weight: 700;
+
+            font-size: 13px;
+        }
+
+        .tool-btn:hover {
+            border-color:
+                var(--green);
+        }
+
+        .analyze-btn {
+            width: 100%;
+
+            margin-top: 15px;
+
+            padding: 15px;
+
+            border: none;
+
+            border-radius: 11px;
+
+            background:
+                var(--green);
+
+            color: white;
+
+            font-weight: 900;
+
+            font-size: 15px;
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+
+            cursor: not-allowed;
+        }
+
+
+        /* =====================================================
+           ANALYZING
+        ===================================================== */
+
+        .analyzing-box {
+            display: none;
+
+            margin-top: 25px;
+
+            text-align: center;
+
+            background:
+                var(--card);
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 20px;
+
+            padding: 35px;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+
+            border:
+                5px solid var(--border);
+
+            border-top:
+                5px solid var(--green);
+
+            border-radius: 50%;
+
+            margin:
+                auto auto 18px;
+
+            animation:
+                spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+
+            to {
+                transform:
+                    rotate(360deg);
+            }
+
+        }
+
+        .analysis-progress {
+            max-width: 500px;
+
+            height: 8px;
+
+            background:
+                var(--border);
+
+            border-radius: 20px;
+
+            margin:
+                18px auto;
+
+            overflow: hidden;
+        }
+
+        .analysis-progress-fill {
+            width: 0%;
+
+            height: 100%;
+
+            background:
+                var(--green);
+
+            animation:
+                analyzeProgress 2.8s
+                ease-in-out
+                forwards;
+        }
+
+        @keyframes analyzeProgress {
+
+            0% {
+                width: 0%;
+            }
+
+            35% {
+                width: 35%;
+            }
+
+            70% {
+                width: 72%;
+            }
+
+            100% {
+                width: 96%;
+            }
+
+        }
+
+        .analysis-step {
+            color: var(--muted);
+
+            font-size: 13px;
+        }
+
+
+        /* =====================================================
+           FEATURES
+        ===================================================== */
+
+        .features-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4,1fr);
+
+            gap: 18px;
+        }
+
+        .feature-card {
+            background:
+                var(--card);
+
+            padding:
+                27px 22px;
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 16px;
+
+            transition: 0.3s;
+        }
+
+        .feature-card:hover {
+            transform:
+                translateY(-6px);
+
+            box-shadow:
+                var(--shadow);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border-radius: 12px;
+
+            background:
+                var(--green-light);
+
+            font-size: 22px;
+
+            margin-bottom: 16px;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 7px;
+        }
+
+        .feature-card p {
+            color: var(--muted);
+
+            font-size: 14px;
+        }
+
+
+        /* =====================================================
+           HOW IT WORKS
+        ===================================================== */
+
+        .steps-section {
+            background:
+                var(--green-soft);
+        }
+
+        .steps-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4,1fr);
+
+            gap: 22px;
+        }
+
+        .step {
+            text-align: center;
+        }
+
+        .step-number {
+            width: 56px;
+            height: 56px;
+
+            margin:
+                auto auto 15px;
+
+            border-radius: 50%;
+
+            background:
+                var(--green);
+
+            color: white;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-weight: 900;
+
+            font-size: 19px;
+        }
+
+        .step p {
+            color: var(--muted);
+
+            font-size: 14px;
+        }
+
+
+        /* =====================================================
+           PLANT LIBRARY
+        ===================================================== */
+
+        .plant-search {
+            max-width: 500px;
+
+            margin:
+                0 auto 30px;
+
+            position: relative;
+        }
+
+        .plant-search input {
+            width: 100%;
+
+            padding:
+                14px 18px;
+
+            border:
+                1px solid var(--border);
+
+            background:
+                var(--card);
+
+            color:
+                var(--text);
+
+            border-radius: 12px;
+
+            outline: none;
+
+            font-size: 14px;
+        }
+
+        .plants-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(6,1fr);
+
+            gap: 14px;
+        }
+
+        .plant-card {
+            background:
+                var(--card);
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 15px;
+
+            padding:
+                20px 10px;
+
+            text-align: center;
+
+            transition: 0.3s;
+        }
+
+        .plant-card:hover {
+            transform:
+                translateY(-5px);
+
+            border-color:
+                #a9d5b4;
+
+            box-shadow:
+                var(--shadow);
+        }
+
+        .plant-icon {
+            font-size: 34px;
+
+            margin-bottom: 7px;
+        }
+
+        .plant-card h4 {
+            font-size: 14px;
+        }
+
+
+        /* =====================================================
+           HISTORY
+        ===================================================== */
+
+        .history-section {
+            background:
+                var(--green-soft);
+        }
+
+        .history-card {
+            background:
+                var(--card);
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 18px;
+
+            padding: 20px;
+
+            max-width: 900px;
+
+            margin: auto;
+        }
+
+        .history-empty {
+            text-align: center;
+
+            color: var(--muted);
+
+            padding: 25px;
+        }
+
+        .history-item {
+            display: flex;
+
+            align-items: center;
+
+            gap: 15px;
+
+            padding:
+                12px 0;
+
+            border-bottom:
+                1px solid var(--border);
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-thumb {
+            width: 65px;
+            height: 65px;
+
+            object-fit: cover;
+
+            border-radius: 10px;
+
+            background:
+                var(--green-light);
+        }
+
+        .history-details {
+            flex: 1;
+        }
+
+        .history-details strong {
+            display: block;
+        }
+
+        .history-details small {
+            color: var(--muted);
+        }
+
+        .clear-history {
+            margin-top: 15px;
+
+            border: none;
+
+            background:
+                #b42318;
+
+            color: white;
+
+            padding:
+                10px 15px;
+
+            border-radius: 8px;
+
+            font-weight: 700;
+        }
+
+
+        /* =====================================================
+           ABOUT
+        ===================================================== */
+
+        .about-card {
+            max-width: 900px;
+
+            margin: auto;
+
+            padding:
+                35px;
+
+            border-radius: 20px;
+
+            background:
+                var(--card);
+
+            border:
+                1px solid var(--border);
+
+            box-shadow:
+                var(--shadow);
+
+            text-align: center;
+        }
+
+        .about-card p {
+            color: var(--muted);
+
+            margin-top: 10px;
+        }
+
+
+        /* =====================================================
+           FOOTER
+        ===================================================== */
+
+        footer {
+            background:
+                #12351e;
+
+            color: white;
+
+            padding:
+                55px 25px 25px;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+
+            margin: auto;
+
+            display: grid;
+
+            grid-template-columns:
+                2fr 1fr 1fr;
+
+            gap: 50px;
+        }
+
+        .footer-logo {
+            font-size: 22px;
+
+            font-weight: 900;
+
+            margin-bottom: 10px;
+        }
+
+        .footer-container p {
+            color:
+                #b9cbbd;
+
+            font-size: 14px;
+        }
+
+        .footer-links h4 {
+            margin-bottom: 14px;
+        }
+
+        .footer-links a {
+            display: block;
+
+            color:
+                #b9cbbd;
+
+            font-size: 14px;
+
+            margin-bottom: 8px;
+        }
+
+        .copyright {
+            max-width: 1200px;
+
+            margin:
+                40px auto 0;
+
+            padding-top: 20px;
+
+            border-top:
+                1px solid #31523b;
+
+            text-align: center;
+
+            color:
+                #aebfb2;
+
+            font-size: 13px;
+        }
+
+
+        /* =====================================================
+           CAMERA MODAL
+        ===================================================== */
+
+        .camera-modal {
+            display: none;
+
+            position: fixed;
+
+            inset: 0;
+
+            background:
+                rgba(0,0,0,0.82);
+
+            z-index: 8000;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 18px;
+        }
+
+        .camera-box {
+            width: 100%;
+
+            max-width: 650px;
+
+            background:
+                var(--card);
+
+            border-radius: 20px;
+
+            padding: 20px;
+        }
+
+        .camera-box-header {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 15px;
+        }
+
+        .camera-close-icon {
+            width: 35px;
+            height: 35px;
+
+            border: none;
+
+            border-radius: 50%;
+
+            background:
+                var(--border);
+
+            color:
+                var(--text);
+        }
+
+        #cameraVideo {
+            width: 100%;
+
+            max-height: 500px;
+
+            object-fit: cover;
+
+            border-radius: 14px;
+
+            background: black;
+        }
+
+        .camera-controls {
+            display: flex;
+
+            gap: 10px;
+
+            margin-top: 15px;
+        }
+
+        .camera-controls button {
+            flex: 1;
+
+            padding: 13px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            font-weight: 800;
+        }
+
+        .capture-btn {
+            background:
+                var(--green);
+
+            color: white;
+        }
+
+        .close-camera {
+            background:
+                var(--border);
+
+            color:
+                var(--text);
+        }
+
+
+        /* =====================================================
+           CROP MODAL
+        ===================================================== */
+
+        .crop-modal {
+            display: none;
+
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 8500;
+
+            background:
+                rgba(0,0,0,0.85);
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 15px;
+        }
+
+        .crop-box {
+            width: 100%;
+
+            max-width: 750px;
+
+            background:
+                var(--card);
+
+            border-radius: 20px;
+
+            padding: 20px;
+        }
+
+        .crop-canvas-wrapper {
+            background: #111;
+
+            border-radius: 15px;
+
+            padding: 10px;
+
+            overflow: auto;
+
+            max-height: 60vh;
+
+            text-align: center;
+        }
+
+        #cropCanvas {
+            max-width: 100%;
+
+            display: inline-block;
+        }
+
+        .crop-controls {
+            display: flex;
+
+            gap: 10px;
+
+            flex-wrap: wrap;
+
+            margin-top: 15px;
+        }
+
+        .crop-controls button {
+            flex: 1;
+
+            min-width: 100px;
+
+            padding: 11px;
+
+            border: none;
+
+            border-radius: 9px;
+
+            font-weight: 800;
+        }
+
+        .apply-crop {
+            background:
+                var(--green);
+
+            color: white;
+        }
+
+        .cancel-crop {
+            background:
+                var(--border);
+
+            color:
+                var(--text);
+        }
+
+
+        /* =====================================================
+           TOAST
+        ===================================================== */
+
+        .toast {
+            position: fixed;
+
+            right: 20px;
+
+            bottom: 20px;
+
+            z-index: 10000;
+
+            background:
+                #17351f;
+
+            color: white;
+
+            padding:
+                13px 17px;
+
+            border-radius: 11px;
+
+            box-shadow:
+                0 10px 30px
+                rgba(0,0,0,0.2);
+
+            transform:
+                translateY(100px);
+
+            opacity: 0;
+
+            transition: 0.3s;
+
+            max-width: 330px;
+
+            font-size: 13px;
+        }
+
+        .toast.show {
+            transform:
+                translateY(0);
+
+            opacity: 1;
+        }
+
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        @media(max-width:1000px) {
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero-container {
+                grid-template-columns: 1fr;
+
+                text-align: center;
+            }
+
+            .hero p {
+                margin:
+                    0 auto 25px;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+            }
+
+            .features-grid {
+                grid-template-columns:
+                    repeat(2,1fr);
+            }
+
+            .steps-grid {
+                grid-template-columns:
+                    repeat(2,1fr);
+            }
+
+            .plants-grid {
+                grid-template-columns:
+                    repeat(3,1fr);
+            }
+
+            .preview-layout {
+                grid-template-columns:
+                    1fr;
+            }
+
+        }
+
+        @media(max-width:650px) {
+
+            .nav-container {
+                padding:
+                    12px 15px;
+            }
+
+            .logo {
+                font-size: 17px;
+            }
+
+            .lang-btn {
+                display: none;
+            }
+
+            .hero {
+                min-height:
+                    auto;
+            }
+
+            .hero-container {
+                padding:
+                    60px 18px;
+            }
+
+            .hero h1 {
+                font-size: 42px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .hero-visual {
+                height: 250px;
+            }
+
+            .hero-leaf {
+                font-size: 95px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+
+                gap: 8px;
+            }
+
+            .stat {
+                border-right: none;
+
+                border-bottom:
+                    1px solid var(--border);
+            }
+
+            .stat:last-child {
+                border-bottom: none;
+            }
+
+            .section {
+                padding:
+                    60px 17px;
+            }
+
+            .section-heading h2 {
+                font-size: 30px;
+            }
+
+            .scanner-card {
+                padding: 15px;
+            }
+
+            .drop-zone {
+                padding:
+                    30px 15px;
+            }
+
+            .features-grid,
+            .steps-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .plants-grid {
+                grid-template-columns:
+                    repeat(2,1fr);
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+
+                gap: 30px;
+            }
+
+            .camera-controls {
+                flex-direction: column;
+            }
+
+            .crop-controls button {
+                flex-basis: 45%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     NAVBAR
+===================================================== -->
+
+<nav class="navbar">
+
+    <div class="nav-container">
+
+        <a href="/" class="logo">
+            🌿 Plant Disease AI
+        </a>
+
+
+        <div class="nav-links">
+
+            <a href="#home"
+               data-en="Home"
+               data-mr="मुख्यपृष्ठ">
+                Home
+            </a>
+
+            <a href="#scanner"
+               data-en="AI Scanner"
+               data-mr="AI स्कॅनर">
+                AI Scanner
+            </a>
+
+            <a href="#how"
+               data-en="How It Works"
+               data-mr="कसे काम करते">
+                How It Works
+            </a>
+
+            <a href="#plants"
+               data-en="Plants"
+               data-mr="वनस्पती">
+                Plants
+            </a>
+
+            <a href="#history"
+               data-en="History"
+               data-mr="इतिहास">
+                History
+            </a>
+
+        </div>
+
+
+        <div class="nav-actions">
+
+            <button
+                class="lang-btn"
+                id="languageBtn"
+                onclick="toggleLanguage()">
+                मराठी
+            </button>
+
+            <button
+                class="icon-btn"
+                onclick="toggleDarkMode()"
+                id="darkModeBtn"
+                title="Dark Mode">
+                🌙
+            </button>
+
+            <a href="#scanner"
+               class="nav-btn">
+                📸 Scan
+            </a>
+
+        </div>
+
+    </div>
+
+</nav>
+
+
+
+<!-- =====================================================
+     HERO
+===================================================== -->
+
+<section class="hero"
+         id="home">
+
+    <div class="hero-container">
+
+        <div>
+
+            <div class="badge"
+                 data-en="🌱 AI-Powered Plant Health"
+                 data-mr="🌱 AI आधारित वनस्पती आरोग्य">
+                🌱 AI-Powered Plant Health
+            </div>
+
+
+            <h1>
+
+                <span
+                    data-en="Protect Your Plants"
+                    data-mr="तुमच्या वनस्पतींचे संरक्षण करा">
+                    Protect Your Plants
+                </span>
+
+                <br>
+
+                <span
+                    data-en="With AI"
+                    data-mr="AI च्या मदतीने">
+                    With AI
+                </span>
+
+            </h1>
+
+
+            <p
+                data-en="Upload or capture a plant leaf image and let AI analyze possible diseases, confidence and severity."
+                data-mr="वनस्पतीच्या पानाचा फोटो upload करा किंवा camera ने काढा आणि AI कडून disease, confidence आणि severity तपासा.">
+
+                Upload or capture a plant leaf image and
+                let AI analyze possible diseases,
+                confidence and severity.
+
+            </p>
+
+
+            <div class="hero-buttons">
+
+                <a href="#scanner"
+                   class="primary-btn"
+                   data-en="📸 Start AI Scan"
+                   data-mr="📸 AI Scan सुरू करा">
+                    📸 Start AI Scan
+                </a>
+
+                <a href="#how"
+                   class="secondary-btn"
+                   data-en="▶ How It Works"
+                   data-mr="▶ कसे काम करते">
+                    ▶ How It Works
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <div class="hero-card">
+
+            <div class="hero-visual">
+
+                <div class="hero-leaf">
+                    🌿
+                </div>
+
+                <div class="ai-status">
+                    🟢 AI Ready
+                </div>
+
+            </div>
+
+
+            <div class="hero-card-info">
+
+                <h3>
+                    🩺 AI Plant Diagnosis
+                </h3>
+
+                <p>
+                    Fast image-based plant health analysis.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     STATS
+===================================================== -->
+
+<section class="stats">
+
+    <div class="stats-grid">
+
+        <div class="stat">
+            <h2>39+</h2>
+            <p data-en="Disease Classes"
+               data-mr="Disease Classes">
+                Disease Classes
+            </p>
+        </div>
+
+        <div class="stat">
+            <h2>224×224</h2>
+            <p data-en="AI Image Processing"
+               data-mr="AI Image Processing">
+                AI Image Processing
+            </p>
+        </div>
+
+        <div class="stat">
+            <h2>AI</h2>
+            <p data-en="Instant Analysis"
+               data-mr="Instant Analysis">
+                Instant Analysis
+            </p>
+        </div>
+
+        <div class="stat">
+            <h2>24/7</h2>
+            <p data-en="Available"
+               data-mr="उपलब्ध">
+                Available
+            </p>
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     SCANNER
+===================================================== -->
+
+<section class="detect-section"
+         id="scanner">
+
+    <div class="section">
+
+        <div class="section-heading">
+
+            <span
+                data-en="AI Diagnosis"
+                data-mr="AI निदान">
+                AI Diagnosis
+            </span>
+
+            <h2
+                data-en="Smart Plant Scanner"
+                data-mr="Smart Plant Scanner">
+                Smart Plant Scanner
+            </h2>
+
+            <p
+                data-en="Upload, capture, edit and check your image before sending it to the AI model."
+                data-mr="Image upload करा, camera ने photo काढा, edit करा आणि AI model कडे पाठवण्यापूर्वी quality तपासा.">
+
+                Upload, capture, edit and check your image
+                before sending it to the AI model.
+
+            </p>
+
+        </div>
+
+
+        <div class="scanner-wrapper">
+
+            <form
+                action="/predict"
+                method="POST"
+                enctype="multipart/form-data"
+                id="predictionForm">
+
+
+                <div class="scanner-card">
+
+
+                    <!-- DROP ZONE -->
+
+                    <div class="drop-zone"
+                         id="dropZone">
+
+                        <div class="scanner-icon">
+                            📷
+                        </div>
+
+
+                        <h3
+                            data-en="Scan Your Plant Leaf"
+                            data-mr="तुमच्या पानाचा Scan करा">
+                            Scan Your Plant Leaf
+                        </h3>
+
+
+                        <p
+                            data-en="Drag & drop image here or choose an option below"
+                            data-mr="Image इथे drag & drop करा किंवा खालील option निवडा">
+
+                            Drag & drop image here or
+                            choose an option below
+
+                        </p>
+
+
+                        <input
+                            type="file"
+                            name="image"
+                            id="imageInput"
+                            accept="image/*"
+                            required
+                        >
+
+
+                        <div class="scanner-buttons">
+
+                            <label
+                                for="imageInput"
+                                class="scan-btn scan-upload">
+
+                                📁 Choose Image
+
+                            </label>
+
+
+                            <button
+                                type="button"
+                                class="scan-btn scan-camera"
+                                onclick="openCamera()">
+
+                                📸 Live Camera
+
+                            </button>
+
+
+                            <button
+                                type="button"
+                                class="scan-btn scan-history-btn"
+                                onclick="scrollToHistory()">
+
+                                📊 History
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- PREVIEW -->
+
+                    <div class="preview-area"
+                         id="previewArea">
+
+
+                        <div class="preview-layout">
+
+
+                            <div class="preview-box">
+
+                                <img
+                                    id="previewImage"
+                                    alt="Plant Preview">
+
+                            </div>
+
+
+                            <div class="preview-info">
+
+
+                                <div class="file-name"
+                                     id="fileName">
+                                </div>
+
+
+                                <!-- QUALITY -->
+
+                                <div class="quality-card">
+
+                                    <div class="quality-header">
+
+                                        <strong>
+                                            🧪 Image Quality
+                                        </strong>
+
+                                        <span
+                                            class="quality-score"
+                                            id="qualityScore">
+                                            0%
+                                        </span>
+
+                                    </div>
+
+
+                                    <div class="quality-bar">
+
+                                        <div
+                                            class="quality-fill"
+                                            id="qualityFill">
+                                        </div>
+
+                                    </div>
+
+
+                                    <div
+                                        class="quality-message"
+                                        id="qualityMessage">
+
+                                        Checking image...
+
+                                    </div>
+
+                                </div>
+
+
+
+                                <!-- EDIT TOOLS -->
+
+                                <div class="edit-tools">
+
+                                    <button
+                                        type="button"
+                                        class="tool-btn"
+                                        onclick="rotateImage(-90)">
+                                        ↶ Rotate
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="tool-btn"
+                                        onclick="rotateImage(90)">
+                                        ↷ Rotate
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="tool-btn"
+                                        onclick="zoomImage(1.1)">
+                                        🔍 Zoom +
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="tool-btn"
+                                        onclick="zoomImage(0.9)">
+                                        🔎 Zoom -
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="tool-btn"
+                                        onclick="openCrop()">
+                                        ✂️ Crop
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="tool-btn"
+                                        onclick="resetImage()">
+                                        ↩ Reset
+                                    </button>
+
+                                </div>
+
+
+                                <button
+                                    type="submit"
+                                    class="analyze-btn"
+                                    id="analyzeBtn">
+
+                                    🔍 Analyze Plant with AI
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- ANALYZING -->
+
+                    <div
+                        class="analyzing-box"
+                        id="analyzingBox">
+
+                        <div class="loader"></div>
+
+
+                        <h3
+                            data-en="🔄 AI is Analyzing..."
+                            data-mr="🔄 AI Analysis सुरू आहे...">
+
+                            🔄 AI is Analyzing...
+
+                        </h3>
+
+
+                        <p
+                            class="analysis-step"
+                            id="analysisStep">
+
+                            Preparing image...
+
+                        </p>
+
+
+                        <div class="analysis-progress">
+
+                            <div
+                                class="analysis-progress-fill">
+                            </div>
+
+                        </div>
+
+
+                        <p
+                            class="analysis-step">
+
+                            Please wait. Do not close this page.
+
+                        </p>
+
+                    </div>
+
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     FEATURES
+===================================================== -->
+
+<section class="section">
+
+    <div class="section-heading">
+
+        <span>Advanced Features</span>
+
+        <h2>Everything You Need</h2>
+
+        <p>
+            A complete plant scanning experience.
+        </p>
+
+    </div>
+
+
+    <div class="features-grid">
+
+
+        <div class="feature-card">
+
+            <div class="feature-icon">
+                🤖
+            </div>
+
+            <h3>AI Detection</h3>
+
+            <p>
+                Analyze plant leaf images using
+                your trained AI classification model.
+            </p>
+
+        </div>
+
+
+        <div class="feature-card">
+
+            <div class="feature-icon">
+                📷
+            </div>
+
+            <h3>Live Camera</h3>
+
+            <p>
+                Capture a fresh plant leaf photo
+                directly from your device.
+            </p>
+
+        </div>
+
+
+        <div class="feature-card">
+
+            <div class="feature-icon">
+                ✂️
+            </div>
+
+            <h3>Image Editing</h3>
+
+            <p>
+                Rotate, zoom, crop and reset your
+                image before analysis.
+            </p>
+
+        </div>
+
+
+        <div class="feature-card">
+
+            <div class="feature-icon">
+                🧪
+            </div>
+
+            <h3>Quality Check</h3>
+
+            <p>
+                Basic image quality analysis helps
+                you submit a clearer image.
+            </p>
+
+        </div>
+
+
+        <div class="feature-card">
+
+            <div class="feature-icon">
+                📊
+            </div>
+
+            <h3>Confidence</h3>
+
+            <p>
+                View prediction confidence on
+                your diagnosis page.
+            </p>
+
+        </div>
+
+
+        <div class="feature-card">
+
+            <div class="feature-icon">
+                🌙
+            </div>
+
+            <h3>Dark Mode</h3>
+
+            <p>
+                Comfortable dark interface for
+                night-time usage.
+            </p>
+
+        </div>
+
+
+        <div class="feature-card">
+
+            <div class="feature-icon">
+                🌐
+            </div>
+
+            <h3>English / Marathi</h3>
+
+            <p>
+                Switch the interface language
+                instantly.
+            </p>
+
+        </div>
+
+
+        <div class="feature-card">
+
+            <div class="feature-icon">
+                📱
+            </div>
+
+            <h3>Mobile Ready</h3>
+
+            <p>
+                Designed to work smoothly on
+                phones, tablets and desktop.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     HOW IT WORKS
+===================================================== -->
+
+<section class="steps-section"
+         id="how">
+
+    <div class="section">
+
+        <div class="section-heading">
+
+            <span>Simple Process</span>
+
+            <h2>How AI Detection Works</h2>
+
+        </div>
+
+
+        <div class="steps-grid">
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    1
+                </div>
+
+                <h3>Capture</h3>
+
+                <p>
+                    Upload an image or use your camera.
+                </p>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    2
+                </div>
+
+                <h3>Edit</h3>
+
+                <p>
+                    Crop, rotate and adjust the image.
+                </p>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    3
+                </div>
+
+                <h3>Analyze</h3>
+
+                <p>
+                    Flask sends the image to your AI model.
+                </p>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    4
+                </div>
+
+                <h3>Diagnosis</h3>
+
+                <p>
+                    View disease, confidence and guidance.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     PLANT LIBRARY
+===================================================== -->
+
+<section class="section"
+         id="plants">
+
+    <div class="section-heading">
+
+        <span>Plant Library</span>
+
+        <h2>Supported Plants</h2>
+
+        <p>
+            Search the plant categories represented
+            by your trained model.
+        </p>
+
+    </div>
+
+
+    <div class="plant-search">
+
+        <input
+            type="text"
+            id="plantSearch"
+            placeholder="🔎 Search plant..."
+            oninput="searchPlants()">
+
+    </div>
+
+
+    <div
+        class="plants-grid"
+        id="plantsGrid">
+
+
+        <div class="plant-card"
+             data-name="tomato">
+
+            <div class="plant-icon">🍅</div>
+
+            <h4>Tomato</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="potato">
+
+            <div class="plant-icon">🥔</div>
+
+            <h4>Potato</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="apple">
+
+            <div class="plant-icon">🍎</div>
+
+            <h4>Apple</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="grape">
+
+            <div class="plant-icon">🍇</div>
+
+            <h4>Grape</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="corn">
+
+            <div class="plant-icon">🌽</div>
+
+            <h4>Corn</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="pepper">
+
+            <div class="plant-icon">🌶️</div>
+
+            <h4>Pepper</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="cherry">
+
+            <div class="plant-icon">🍒</div>
+
+            <h4>Cherry</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="peach">
+
+            <div class="plant-icon">🍑</div>
+
+            <h4>Peach</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="strawberry">
+
+            <div class="plant-icon">🍓</div>
+
+            <h4>Strawberry</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="orange">
+
+            <div class="plant-icon">🍊</div>
+
+            <h4>Orange</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="soybean">
+
+            <div class="plant-icon">🌱</div>
+
+            <h4>Soybean</h4>
+
+        </div>
+
+
+        <div class="plant-card"
+             data-name="squash">
+
+            <div class="plant-icon">🎃</div>
+
+            <h4>Squash</h4>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     HISTORY
+===================================================== -->
+
+<section class="history-section"
+         id="history">
+
+    <div class="section">
+
+        <div class="section-heading">
+
+            <span>Scan History</span>
+
+            <h2>Your Recent Scans</h2>
+
+            <p>
+                Your recent browser-side scan records
+                are stored locally on this device.
+            </p>
+
+        </div>
+
+
+        <div class="history-card">
+
+            <div
+                id="historyList">
+
+                <div class="history-empty">
+
+                    📊 No scans yet.
+
+                    <br>
+
+                    Your recent diagnosis records
+                    will appear here.
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="clear-history"
+                onclick="clearHistory()">
+
+                🗑 Clear History
+
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     ABOUT
+===================================================== -->
+
+<section class="section"
+         id="about">
+
+    <div class="about-card">
+
+        <div style="font-size:50px;">
+            🌿
+        </div>
+
+        <h2>
+            Plant Disease AI
+        </h2>
+
+        <p>
+            An AI-powered plant health project that
+            uses image classification to identify
+            disease classes from plant leaf images.
+        </p>
+
+        <p>
+            <strong>Important:</strong>
+            AI predictions are informational and
+            should not replace professional agricultural
+            advice.
+        </p>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     FOOTER
+===================================================== -->
+
+<footer>
+
+    <div class="footer-container">
+
+
+        <div>
+
+            <div class="footer-logo">
+                🌿 Plant Disease AI
+            </div>
+
+            <p>
+                Smart plant health analysis using
+                artificial intelligence and image recognition.
+            </p>
+
+        </div>
+
+
+        <div class="footer-links">
+
+            <h4>Navigation</h4>
+
+            <a href="#home">Home</a>
+
+            <a href="#scanner">AI Scanner</a>
+
+            <a href="#plants">Plants</a>
+
+            <a href="#history">History</a>
+
+        </div>
+
+
+        <div class="footer-links">
+
+            <h4>Tools</h4>
+
+            <a href="#scanner">Camera</a>
+
+            <a href="#scanner">Upload</a>
+
+            <a href="#scanner">Image Editor</a>
+
+            <a href="#about">About</a>
+
+        </div>
+
+    </div>
+
+
+    <div class="copyright">
+
+        © 2026 Plant Disease AI.
+        All rights reserved.
+
+    </div>
+
+</footer>
+
+
+
+<!-- =====================================================
+     CAMERA MODAL
+===================================================== -->
+
+<div
+    class="camera-modal"
+    id="cameraModal">
+
+
+    <div class="camera-box">
+
+
+        <div class="camera-box-header">
+
+            <h3>
+                📸 Capture Plant Leaf
+            </h3>
+
+            <button
+                class="camera-close-icon"
+                onclick="closeCamera()">
+
+                ✕
+
+            </button>
+
+        </div>
+
+
+        <video
+            id="cameraVideo"
+            autoplay
+            playsinline>
+        </video>
+
+
+        <div class="camera-controls">
+
+            <button
+                type="button"
+                class="capture-btn"
+                onclick="capturePhoto()">
+
+                📸 Capture
+
+            </button>
+
+
+            <button
+                type="button"
+                class="close-camera"
+                onclick="closeCamera()">
+
+                ✕ Close
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     CROP MODAL
+===================================================== -->
+
+<div
+    class="crop-modal"
+    id="cropModal">
+
+
+    <div class="crop-box">
+
+
+        <h3>
+            ✂️ Crop Image
+        </h3>
+
+
+        <p style="
+            color:var(--muted);
+            font-size:13px;
+            margin:5px 0 12px;
+        ">
+
+            Drag on the image to select the crop area.
+
+        </p>
+
+
+        <div class="crop-canvas-wrapper">
+
+            <canvas
+                id="cropCanvas">
+            </canvas>
+
+        </div>
+
+
+        <div class="crop-controls">
+
+            <button
+                type="button"
+                class="apply-crop"
+                onclick="applyCrop()">
+
+                ✓ Apply Crop
+
+            </button>
+
+
+            <button
+                type="button"
+                class="cancel-crop"
+                onclick="closeCrop()">
+
+                ✕ Cancel
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     TOAST
+===================================================== -->
+
+<div
+    class="toast"
+    id="toast">
+
+    Done
+
+</div>
+
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
+<script>
+
+
+/* =====================================================
+   GLOBAL VARIABLES
+===================================================== */
+
+const imageInput =
+    document.getElementById("imageInput");
+
+const previewArea =
+    document.getElementById("previewArea");
+
+const previewImage =
+    document.getElementById("previewImage");
+
+const fileName =
+    document.getElementById("fileName");
+
+const dropZone =
+    document.getElementById("dropZone");
+
+const predictionForm =
+    document.getElementById("predictionForm");
+
+const analyzingBox =
+    document.getElementById("analyzingBox");
+
+const analysisStep =
+    document.getElementById("analysisStep");
+
+const cameraModal =
+    document.getElementById("cameraModal");
+
+const cameraVideo =
+    document.getElementById("cameraVideo");
+
+const cropModal =
+    document.getElementById("cropModal");
+
+const cropCanvas =
+    document.getElementById("cropCanvas");
+
+const toast =
+    document.getElementById("toast");
+
+let cameraStream = null;
+
+let currentFile = null;
+
+let rotation = 0;
+
+let zoom = 1;
+
+let originalImageURL = null;
+
+let cropImage = null;
+
+let cropStartX = 0;
+
+let cropStartY = 0;
+
+let cropEndX = 0;
+
+let cropEndY = 0;
+
+let isCropping = false;
+
+
+
+/* =====================================================
+   TOAST
+===================================================== */
+
+function showToast(message) {
+
+    toast.textContent = message;
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+
+        toast.classList.remove("show");
+
+    }, 2800);
+
+}
+
+
+
+/* =====================================================
+   FILE INPUT
+===================================================== */
+
+imageInput.addEventListener(
+    "change",
+    function () {
+
+        const file = this.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        processSelectedFile(file);
+
+    }
+);
+
+
+
+/* =====================================================
+   PROCESS FILE
+===================================================== */
+
+function processSelectedFile(file) {
+
+    if (!file.type.startsWith("image/")) {
+
+        showToast(
+            "Please select a valid image."
+        );
+
+        return;
+
+    }
+
+
+    if (file.size > 15 * 1024 * 1024) {
+
+        showToast(
+            "Image should be smaller than 15 MB."
+        );
+
+        return;
+
+    }
+
+
+    currentFile = file;
+
+    rotation = 0;
+
+    zoom = 1;
+
+
+    const reader =
+        new FileReader();
+
+
+    reader.onload =
+        function(event) {
+
+            originalImageURL =
+                event.target.result;
+
+            previewImage.src =
+                originalImageURL;
+
+            previewImage.style.transform =
+                "rotate(0deg) scale(1)";
+
+            previewArea.style.display =
+                "block";
+
+            fileName.textContent =
+                "Selected: " + file.name;
+
+            checkImageQuality(file);
+
+            showToast(
+                "Image loaded successfully."
+            );
+
+        };
+
+
+    reader.readAsDataURL(file);
+
+}
+
+
+
+/* =====================================================
+   DRAG & DROP
+===================================================== */
+
+[
+    "dragenter",
+    "dragover"
+].forEach(eventName => {
+
+    dropZone.addEventListener(
+        eventName,
+        function(event) {
+
+            event.preventDefault();
+
+            dropZone.classList.add(
+                "dragging"
+            );
+
+        }
+    );
+
+});
+
+
+[
+    "dragleave",
+    "drop"
+].forEach(eventName => {
+
+    dropZone.addEventListener(
+        eventName,
+        function(event) {
+
+            event.preventDefault();
+
+            dropZone.classList.remove(
+                "dragging"
+            );
+
+        }
+    );
+
+});
+
+
+dropZone.addEventListener(
+    "drop",
+    function(event) {
+
+        const files =
+            event.dataTransfer.files;
+
+        if (!files.length) {
+            return;
+        }
+
+        const file =
+            files[0];
+
+        const dataTransfer =
+            new DataTransfer();
+
+        dataTransfer.items.add(file);
+
+        imageInput.files =
+            dataTransfer.files;
+
+        processSelectedFile(file);
+
+    }
+);
+
+
+
+/* =====================================================
+   IMAGE QUALITY CHECK
+===================================================== */
+
+function checkImageQuality(file) {
+
+    const qualityScore =
+        document.getElementById(
+            "qualityScore"
+        );
+
+    const qualityFill =
+        document.getElementById(
+            "qualityFill"
+        );
+
+    const qualityMessage =
+        document.getElementById(
+            "qualityMessage"
+        );
+
+
+    const img =
+        new Image();
+
+
+    img.onload =
+        function() {
+
+            const width =
+                img.width;
+
+            const height =
+                img.height;
+
+
+            let score = 50;
+
+
+            /* Resolution */
+
+            if (
+                width >= 800 &&
+                height >= 600
+            ) {
+
+                score += 25;
+
+            }
+
+            else if (
+                width >= 500 &&
+                height >= 400
+            ) {
+
+                score += 15;
+
+            }
+
+
+            /* File size */
+
+            if (
+                file.size >= 100000 &&
+                file.size <= 6000000
+            ) {
+
+                score += 15;
+
+            }
+
+
+            /* Aspect ratio */
+
+            const ratio =
+                width / height;
+
+            if (
+                ratio > 0.5 &&
+                ratio < 2.0
+            ) {
+
+                score += 10;
+
+            }
+
+
+            score =
+                Math.min(
+                    score,
+                    100
+                );
+
+
+            qualityScore.textContent =
+                score + "%";
+
+            qualityFill.style.width =
+                score + "%";
+
+
+            if (score >= 80) {
+
+                qualityMessage.textContent =
+                    "Excellent image quality. Good for AI analysis.";
+
+            }
+
+            else if (score >= 60) {
+
+                qualityMessage.textContent =
+                    "Good image. A clearer leaf photo may improve results.";
+
+            }
+
+            else {
+
+                qualityMessage.textContent =
+                    "Low quality. Try a brighter and closer leaf photo.";
+
+            }
+
+        };
+
+
+    img.src =
+        URL.createObjectURL(file);
+
+}
+
+
+
+/* =====================================================
+   ROTATE
+===================================================== */
+
+function rotateImage(degrees) {
+
+    rotation += degrees;
+
+    previewImage.style.transform =
+        `rotate(${rotation}deg) scale(${zoom})`;
+
+}
+
+
+
+/* =====================================================
+   ZOOM
+===================================================== */
+
+function zoomImage(value) {
+
+    zoom *= value;
+
+    zoom =
+        Math.max(
+            0.5,
+            Math.min(
+                zoom,
+                2
+            )
+        );
+
+
+    previewImage.style.transform =
+        `rotate(${rotation}deg) scale(${zoom})`;
+
+}
+
+
+
+/* =====================================================
+   RESET
+===================================================== */
+
+function resetImage() {
+
+    rotation = 0;
+
+    zoom = 1;
+
+    previewImage.src =
+        originalImageURL;
+
+    previewImage.style.transform =
+        "rotate(0deg) scale(1)";
+
+    showToast(
+        "Image reset."
+    );
+
+}
+
+
+
+/* =====================================================
+   CAMERA
+===================================================== */
+
+async function openCamera() {
+
+    cameraModal.style.display =
+        "flex";
+
+
+    if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+    ) {
+
+        alert(
+            "Camera is not supported here. Please use image upload."
+        );
+
+        closeCamera();
+
+        return;
+
+    }
+
+
+    try {
+
+        cameraStream =
+            await navigator.mediaDevices.getUserMedia({
+
+                video: {
+
+                    facingMode: {
+                        ideal: "environment"
+                    }
+
+                },
+
+                audio: false
+
+            });
+
+
+        cameraVideo.srcObject =
+            cameraStream;
+
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+        alert(
+            "Camera permission denied or unavailable."
+        );
+
+        closeCamera();
+
+    }
+
+}
+
+
+
+/* =====================================================
+   CAPTURE PHOTO
+===================================================== */
+
+function capturePhoto() {
+
+    if (!cameraStream) {
+
+        return;
+
+    }
+
+
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
+
+
+    canvas.width =
+        cameraVideo.videoWidth;
+
+    canvas.height =
+        cameraVideo.videoHeight;
+
+
+    const ctx =
+        canvas.getContext("2d");
+
+
+    ctx.drawImage(
+        cameraVideo,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    canvas.toBlob(
+        function(blob) {
+
+
+            const file =
+                new File(
+                    [blob],
+                    "plant-camera-photo.jpg",
+                    {
+                        type:
+                            "image/jpeg"
+                    }
+                );
+
+
+            const dataTransfer =
+                new DataTransfer();
+
+
+            dataTransfer.items.add(file);
+
+
+            imageInput.files =
+                dataTransfer.files;
+
+
+            processSelectedFile(
+                file
+            );
+
+
+            closeCamera();
+
+
+        },
+        "image/jpeg",
+        0.92
+    );
+
+}
+
+
+
+/* =====================================================
+   CLOSE CAMERA
+===================================================== */
+
+function closeCamera() {
+
+    if (cameraStream) {
+
+        cameraStream
+            .getTracks()
+            .forEach(
+                track =>
+                    track.stop()
+            );
+
+        cameraStream = null;
+
+    }
+
+
+    cameraVideo.srcObject =
+        null;
+
+    cameraModal.style.display =
+        "none";
+
+}
+
+
+
+/* =====================================================
+   CROP
+===================================================== */
+
+function openCrop() {
+
+    if (!currentFile) {
+
+        showToast(
+            "Please select an image first."
+        );
+
+        return;
+
+    }
+
+
+    const img =
+        new Image();
+
+
+    img.onload =
+        function() {
+
+            cropImage = img;
+
+            cropCanvas.width =
+                Math.min(
+                    img.width,
+                    900
+                );
+
+            cropCanvas.height =
+                Math.round(
+                    img.height *
+                    (
+                        cropCanvas.width /
+                        img.width
+                    )
+                );
+
+
+            const ctx =
+                cropCanvas.getContext(
+                    "2d"
+                );
+
+
+            ctx.drawImage(
+                img,
+                0,
+                0,
+                cropCanvas.width,
+                cropCanvas.height
+            );
+
+
+            cropModal.style.display =
+                "flex";
+
+        };
+
+
+    img.src =
+        previewImage.src;
+
+}
+
+
+
+/* =====================================================
+   CROP MOUSE
+===================================================== */
+
+cropCanvas.addEventListener(
+    "mousedown",
+    function(event) {
+
+        const rect =
+            cropCanvas.getBoundingClientRect();
+
+        cropStartX =
+            event.clientX -
+            rect.left;
+
+        cropStartY =
+            event.clientY -
+            rect.top;
+
+        isCropping = true;
+
+    }
+);
+
+
+cropCanvas.addEventListener(
+    "mousemove",
+    function(event) {
+
+        if (!isCropping) {
+            return;
+        }
+
+
+        const rect =
+            cropCanvas.getBoundingClientRect();
+
+        cropEndX =
+            event.clientX -
+            rect.left;
+
+        cropEndY =
+            event.clientY -
+            rect.top;
+
+
+        redrawCrop();
+
+    }
+);
+
+
+cropCanvas.addEventListener(
+    "mouseup",
+    function() {
+
+        isCropping = false;
+
+    }
+);
+
+
+
+/* =====================================================
+   CROP TOUCH
+===================================================== */
+
+cropCanvas.addEventListener(
+    "touchstart",
+    function(event) {
+
+        event.preventDefault();
+
+        const touch =
+            event.touches[0];
+
+        const rect =
+            cropCanvas.getBoundingClientRect();
+
+        cropStartX =
+            touch.clientX -
+            rect.left;
+
+        cropStartY =
+            touch.clientY -
+            rect.top;
+
+        isCropping = true;
+
+    },
+    {
+        passive:false
+    }
+);
+
+
+cropCanvas.addEventListener(
+    "touchmove",
+    function(event) {
+
+        event.preventDefault();
+
+        if (!isCropping) {
+            return;
+        }
+
+
+        const touch =
+            event.touches[0];
+
+        const rect =
+            cropCanvas.getBoundingClientRect();
+
+        cropEndX =
+            touch.clientX -
+            rect.left;
+
+        cropEndY =
+            touch.clientY -
+            rect.top;
+
+
+        redrawCrop();
+
+    },
+    {
+        passive:false
+    }
+);
+
+
+cropCanvas.addEventListener(
+    "touchend",
+    function() {
+
+        isCropping = false;
+
+    }
+);
+
+
+
+/* =====================================================
+   REDRAW CROP
+===================================================== */
+
+function redrawCrop() {
+
+    const ctx =
+        cropCanvas.getContext(
+            "2d"
+        );
+
+
+    ctx.clearRect(
+        0,
+        0,
+        cropCanvas.width,
+        cropCanvas.height
+    );
+
+
+    ctx.drawImage(
+        cropImage,
+        0,
+        0,
+        cropCanvas.width,
+        cropCanvas.height
+    );
+
+
+    if (
+        cropStartX === cropEndX ||
+        cropStartY === cropEndY
+    ) {
+
+        return;
+
+    }
+
+
+    const x =
+        Math.min(
+            cropStartX,
+            cropEndX
+        );
+
+    const y =
+        Math.min(
+            cropStartY,
+            cropEndY
+        );
+
+    const w =
+        Math.abs(
+            cropEndX -
+            cropStartX
+        );
+
+    const h =
+        Math.abs(
+            cropEndY -
+            cropStartY
+        );
+
+
+    ctx.fillStyle =
+        "rgba(0,0,0,0.45)";
+
+
+    ctx.fillRect(
+        0,
+        0,
+        cropCanvas.width,
+        cropCanvas.height
+    );
+
+
+    ctx.clearRect(
+        x,
+        y,
+        w,
+        h
+    );
+
+
+    ctx.strokeStyle =
+        "#ffffff";
+
+    ctx.lineWidth =
+        2;
+
+
+    ctx.strokeRect(
+        x,
+        y,
+        w,
+        h
+    );
+
+}
+
+
+
+/* =====================================================
+   APPLY CROP
+===================================================== */
+
+function applyCrop() {
+
+    const x =
+        Math.min(
+            cropStartX,
+            cropEndX
+        );
+
+    const y =
+        Math.min(
+            cropStartY,
+            cropEndY
+        );
+
+    const w =
+        Math.abs(
+            cropEndX -
+            cropStartX
+        );
+
+    const h =
+        Math.abs(
+            cropEndY -
+            cropStartY
+        );
+
+
+    if (
+        w < 20 ||
+        h < 20
+    ) {
+
+        showToast(
+            "Please select a larger crop area."
+        );
+
+        return;
+
+    }
+
+
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
+
+
+    canvas.width = w;
+
+    canvas.height = h;
+
+
+    const ctx =
+        canvas.getContext(
+            "2d"
+        );
+
+
+    ctx.drawImage(
+        cropImage,
+        x,
+        y,
+        w,
+        h,
+        0,
+        0,
+        w,
+        h
+    );
+
+
+    canvas.toBlob(
+        function(blob) {
+
+            const file =
+                new File(
+                    [blob],
+                    "plant-cropped.jpg",
+                    {
+                        type:
+                            "image/jpeg"
+                    }
+                );
+
+
+            const dataTransfer =
+                new DataTransfer();
+
+
+            dataTransfer.items.add(file);
+
+            imageInput.files =
+                dataTransfer.files;
+
+
+            processSelectedFile(
+                file
+            );
+
+
+            closeCrop();
+
+            showToast(
+                "Crop applied."
+            );
+
+        },
+        "image/jpeg",
+        0.92
+    );
+
+}
+
+
+
+/* =====================================================
+   CLOSE CROP
+===================================================== */
+
+function closeCrop() {
+
+    cropModal.style.display =
+        "none";
+
+    cropStartX = 0;
+
+    cropStartY = 0;
+
+    cropEndX = 0;
+
+    cropEndY = 0;
+
+}
+
+
+
+/* =====================================================
+   FORM SUBMIT / AI ANALYSIS
+===================================================== */
+
+predictionForm.addEventListener(
+    "submit",
+    function(event) {
+
+        if (
+            !imageInput.files.length
+        ) {
+
+            event.preventDefault();
+
+            showToast(
+                "Please select a plant image."
+            );
+
+            return;
+
+        }
+
+
+        analyzingBox.style.display =
+            "block";
+
+        document.querySelector(
+            ".preview-area"
+        ).style.display =
+            "none";
+
+        dropZone.style.display =
+            "none";
+
+
+        window.scrollTo({
+
+            top:
+                analyzingBox.offsetTop -
+                120,
+
+            behavior:
+                "smooth"
+
+        });
+
+
+        const steps = [
+
+            "Preparing image...",
+
+            "Checking image quality...",
+
+            "Sending image to AI model...",
+
+            "Running disease prediction...",
+
+            "Preparing diagnosis..."
+
+        ];
+
+
+        let index = 0;
+
+
+        const interval =
+            setInterval(
+                function() {
+
+                    if (
+                        index <
+                        steps.length
+                    ) {
+
+                        analysisStep.textContent =
+                            steps[index];
+
+                        index++;
+
+                    }
+                    else {
+
+                        clearInterval(
+                            interval
+                        );
+
+                    }
+
+                },
+                650
+            );
+
+    }
+);
+
+
+
+/* =====================================================
+   DARK MODE
+===================================================== */
+
+function toggleDarkMode() {
+
+    document.body.classList.toggle(
+        "dark"
+    );
+
+
+    const enabled =
+        document.body.classList.contains(
+            "dark"
+        );
+
+
+    localStorage.setItem(
+        "plantDarkMode",
+        enabled
+    );
+
+
+    document.getElementById(
+        "darkModeBtn"
+    ).textContent =
+        enabled ? "☀️" : "🌙";
+
+}
+
+
+
+/* =====================================================
+   LOAD DARK MODE
+===================================================== */
+
+if (
+    localStorage.getItem(
+        "plantDarkMode"
+    ) === "true"
+) {
+
+    document.body.classList.add(
+        "dark"
+    );
+
+    document.getElementById(
+        "darkModeBtn"
+    ).textContent =
+        "☀️";
+
+}
+
+
+
+/* =====================================================
+   LANGUAGE
+===================================================== */
+
+let currentLanguage =
+    localStorage.getItem(
+        "plantLanguage"
+    ) || "en";
+
+
+function applyLanguage() {
+
+    document
+        .querySelectorAll(
+            "[data-en]"
+        )
+        .forEach(
+            element => {
+
+                element.textContent =
+                    currentLanguage === "mr"
+                        ? element.dataset.mr
+                        : element.dataset.en;
+
+            }
+        );
+
+
+    document.getElementById(
+        "languageBtn"
+    ).textContent =
+        currentLanguage === "en"
+            ? "मराठी"
+            : "English";
+
+
+    localStorage.setItem(
+        "plantLanguage",
+        currentLanguage
+    );
+
+}
+
+
+function toggleLanguage() {
+
+    currentLanguage =
+        currentLanguage === "en"
+            ? "mr"
+            : "en";
+
+    applyLanguage();
+
+}
+
+
+
+/* =====================================================
+   PLANT SEARCH
+===================================================== */
+
+function searchPlants() {
+
+    const query =
+        document.getElementById(
+            "plantSearch"
+        ).value
+        .toLowerCase()
+        .trim();
+
+
+    document
+        .querySelectorAll(
+            ".plant-card"
+        )
+        .forEach(
+            card => {
+
+                const name =
+                    card.dataset.name;
+
+                card.style.display =
+                    name.includes(query)
+                        ? ""
+                        : "none";
+
+            }
+        );
+
+}
+
+
+
+/* =====================================================
+   HISTORY
+===================================================== */
+
+function getHistory() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem(
+                "plantScanHistory"
+            )
+        ) || [];
+
+    }
+
+    catch {
+
+        return [];
+
+    }
+
+}
+
+
+function renderHistory() {
+
+    const list =
+        document.getElementById(
+            "historyList"
+        );
+
+
+    const history =
+        getHistory();
+
+
+    if (!history.length) {
+
+        list.innerHTML = `
+
+            <div class="history-empty">
+
+                📊 No scans yet.
+
+                <br>
+
+                Your recent diagnosis
+                records will appear here.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    list.innerHTML =
+        history
+            .slice()
+            .reverse()
+            .map(
+                item => `
+
+                    <div class="history-item">
+
+                        <div
+                            class="history-thumb"
+                            style="
+                                display:flex;
+                                align-items:center;
+                                justify-content:center;
+                                font-size:28px;
+                            ">
+                            🌿
+                        </div>
+
+                        <div class="history-details">
+
+                            <strong>
+                                ${escapeHTML(item.disease || "Plant Scan")}
+                            </strong>
+
+                            <small>
+                                ${escapeHTML(item.date || "")}
+                            </small>
+
+                            <br>
+
+                            <small>
+                                Confidence:
+                                ${escapeHTML(String(item.confidence || "N/A"))}%
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                `
+            )
+            .join("");
+
+}
+
+
+function addHistory(
+    disease,
+    confidence
+) {
+
+    const history =
+        getHistory();
+
+
+    history.push({
+
+        disease:
+            disease,
+
+        confidence:
+            confidence,
+
+        date:
+            new Date().toLocaleString()
+
+    });
+
+
+    localStorage.setItem(
+        "plantScanHistory",
+        JSON.stringify(
+            history.slice(-20)
+        )
+    );
+
+
+    renderHistory();
+
+}
+
+
+function clearHistory() {
+
+    if (
+        !confirm(
+            "Clear all scan history?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    localStorage.removeItem(
+        "plantScanHistory"
+    );
+
+
+    renderHistory();
+
+    showToast(
+        "History cleared."
+    );
+
+}
+
+
+function scrollToHistory() {
+
+    document
+        .getElementById(
+            "history"
+        )
+        .scrollIntoView({
+            behavior:
+                "smooth"
+        });
+
+}
+
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replace(
+            /[&<>"']/g,
+            function(char) {
+
+                const map = {
+
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#039;"
+
+                };
+
+                return map[char];
+
+            }
+        );
+
+}
+
+
+
+/* =====================================================
+   KEYBOARD
+===================================================== */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Escape"
+        ) {
+
+            closeCamera();
+
+            closeCrop();
+
+        }
+
+    }
+);
+
+
+
+/* =====================================================
+   INITIALIZE
+===================================================== */
+
+applyLanguage();
+
+renderHistory();
+
+
+</script>
+
+</body>
+
+</html>
