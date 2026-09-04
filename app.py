@@ -1,220 +1,299 @@
-from flask import Flask, render_template, request, send_file, redirect, url_for
 import os
-import sqlite3
 import uuid
-from datetime import datetime
-
 import numpy as np
 import tensorflow as tf
 
+from flask import Flask, render_template, request
 from PIL import Image
 from werkzeug.utils import secure_filename
 
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Table,
-    TableStyle
-)
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.enums import TA_CENTER
 
-
-# =========================================================
-# APP CONFIGURATION
-# =========================================================
+# ==========================================
+# FLASK APP
+# ==========================================
 
 app = Flask(__name__)
 
 UPLOAD_FOLDER = "static/uploads"
-REPORT_FOLDER = "static/reports"
-DATABASE = "plant_history.db"
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["REPORT_FOLDER"] = REPORT_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(REPORT_FOLDER, exist_ok=True)
 
 
-# =========================================================
-# MODEL
-# =========================================================
+# ==========================================
+# LOAD MODEL
+# ==========================================
 
 MODEL_PATH = "model/plant_disease_model.keras"
 CLASS_NAMES_PATH = "model/class_names.txt"
 
-model = tf.keras.models.load_model(MODEL_PATH)
 
-with open(CLASS_NAMES_PATH, "r") as f:
-    class_names = [line.strip() for line in f.readlines()]
+print("=" * 60)
+print("LOADING PLANT DISEASE AI MODEL...")
+print("=" * 60)
+
+
+# Check model exists
+if not os.path.exists(MODEL_PATH):
+    raise FileNotFoundError(
+        f"Model file not found: {MODEL_PATH}"
+    )
+
+
+# Load model
+model = tf.keras.models.load_model(
+    MODEL_PATH,
+    compile=False
+)
+
+print("Model loaded successfully!")
+
+
+# ==========================================
+# LOAD CLASS NAMES
+# ==========================================
+
+if not os.path.exists(CLASS_NAMES_PATH):
+    raise FileNotFoundError(
+        f"Class names file not found: {CLASS_NAMES_PATH}"
+    )
+
+
+with open(
+    CLASS_NAMES_PATH,
+    "r",
+    encoding="utf-8"
+) as f:
+
+    class_names = [
+        line.strip()
+        for line in f.readlines()
+        if line.strip()
+    ]
+
+
+print("Number of classes:", len(class_names))
+
+
+# ==========================================
+# VALIDATE MODEL OUTPUT
+# ==========================================
+
+model_output_classes = model.output_shape[-1]
+
+print("Model output classes:", model_output_classes)
+
+
+if len(class_names) != model_output_classes:
+
+    raise ValueError(
+        f"""
+ERROR!
+
+Model has {model_output_classes} output classes
+but class_names.txt has {len(class_names)} classes.
+
+Please make sure model and class_names.txt
+are generated from the SAME training process.
+"""
+    )
+
+
+# ==========================================
+# GET IMAGE SIZE
+# ==========================================
 
 input_shape = model.input_shape
 
 IMG_HEIGHT = input_shape[1]
 IMG_WIDTH = input_shape[2]
 
-print("====================================")
-print("Model loaded successfully!")
-print("Number of classes:", len(class_names))
+
 print("Image size:", IMG_WIDTH, "x", IMG_HEIGHT)
-print("====================================")
+
+print("\nCLASS ORDER:")
+
+for index, name in enumerate(class_names):
+    print(index, "->", name)
+
+print("=" * 60)
 
 
-# =========================================================
-# DATABASE
-# =========================================================
+# ==========================================
+# ALLOWED FILES
+# ==========================================
 
-def init_database():
-
-    connection = sqlite3.connect(DATABASE)
-
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS scans (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT,
-            disease TEXT,
-            confidence REAL,
-            severity TEXT,
-            symptoms TEXT,
-            treatment TEXT,
-            prevention TEXT,
-            created_at TEXT
-        )
-    """)
-
-    connection.commit()
-
-    connection.close()
-
-
-init_database()
-
-
-# =========================================================
-# DISEASE INFORMATION
-# =========================================================
-
-DISEASE_INFO = {
-
-    "Tomato___Late_blight": {
-        "symptoms":
-            "Dark brown or black spots may appear on leaves. "
-            "Affected areas can spread quickly, especially under "
-            "cool and humid conditions.",
-
-        "treatment":
-            "Remove severely infected leaves and plant parts. "
-            "Improve air circulation and avoid watering directly "
-            "over the leaves.",
-
-        "prevention":
-            "Avoid excess moisture on leaves, provide adequate "
-            "spacing and remove infected plant debris.",
-
-        "severity":
-            "High"
-    },
-
-
-    "Tomato___Early_blight": {
-        "symptoms":
-            "Brown circular spots with darker rings may develop "
-            "on older leaves. Yellowing can occur around infected areas.",
-
-        "treatment":
-            "Remove affected leaves and keep the surrounding area clean. "
-            "Avoid overhead watering.",
-
-        "prevention":
-            "Maintain proper plant spacing and remove infected leaves "
-            "and plant debris.",
-
-        "severity":
-            "Medium"
-    },
-
-
-    "Tomato___healthy": {
-        "symptoms":
-            "The leaf appears generally healthy with no strong visible "
-            "signs associated with the diseases in the model.",
-
-        "treatment":
-            "No specific disease treatment is indicated. Continue "
-            "normal plant care.",
-
-        "prevention":
-            "Maintain balanced watering, adequate sunlight and "
-            "good air circulation.",
-
-        "severity":
-            "Low"
-    },
-
-
-    "Potato___Late_blight": {
-        "symptoms":
-            "Dark irregular lesions may appear on leaves and can "
-            "spread rapidly under humid conditions.",
-
-        "treatment":
-            "Remove severely affected plant material and avoid "
-            "excess moisture on foliage.",
-
-        "prevention":
-            "Improve air circulation, avoid prolonged leaf wetness "
-            "and remove infected plant debris.",
-
-        "severity":
-            "High"
-    },
-
-
-    "Potato___Early_blight": {
-        "symptoms":
-            "Small dark spots may develop into larger circular "
-            "lesions, often with concentric rings.",
-
-        "treatment":
-            "Remove affected leaves and maintain proper plant care.",
-
-        "prevention":
-            "Use proper spacing, maintain plant nutrition and "
-            "remove infected plant debris.",
-
-        "severity":
-            "Medium"
-    },
-
-
-    "Potato___healthy": {
-        "symptoms":
-            "No strong visible symptoms of the diseases represented "
-            "in the model were detected.",
-
-        "treatment":
-            "No specific disease treatment is required. Continue "
-            "normal plant care.",
-
-        "prevention":
-            "Maintain healthy soil, balanced watering, sunlight "
-            "and regular monitoring.",
-
-        "severity":
-            "Low"
-    }
+ALLOWED_EXTENSIONS = {
+    "png",
+    "jpg",
+    "jpeg",
+    "webp",
+    "bmp"
 }
 
 
-# =========================================================
-# HOME
-# =========================================================
+def allowed_file(filename):
+
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower()
+        in ALLOWED_EXTENSIONS
+    )
+
+
+# ==========================================
+# DISEASE INFORMATION
+# ==========================================
+
+def get_disease_info(disease):
+
+    info = {
+
+        "Apple___Apple_scab": {
+            "plant": "Apple",
+            "diagnosis": "Apple Scab",
+            "symptoms": "Dark olive or brown spots may appear on leaves and fruit.",
+            "treatment": "Remove infected leaves and maintain good air circulation."
+        },
+
+        "Apple___Black_rot": {
+            "plant": "Apple",
+            "diagnosis": "Black Rot",
+            "symptoms": "Dark lesions and rotting areas may develop.",
+            "treatment": "Remove infected plant parts and maintain orchard hygiene."
+        },
+
+        "Apple___Cedar_apple_rust": {
+            "plant": "Apple",
+            "diagnosis": "Cedar Apple Rust",
+            "symptoms": "Yellow or orange spots may appear on leaves.",
+            "treatment": "Remove infected leaves and monitor nearby host plants."
+        },
+
+        "Apple___healthy": {
+            "plant": "Apple",
+            "diagnosis": "Healthy",
+            "symptoms": "No significant disease symptoms detected.",
+            "treatment": "Continue proper watering and regular plant care."
+        },
+
+        "Tomato___Bacterial_spot": {
+            "plant": "Tomato",
+            "diagnosis": "Bacterial Spot",
+            "symptoms": "Small dark spots may appear on leaves.",
+            "treatment": "Remove affected leaves and avoid overhead watering."
+        },
+
+        "Tomato___Early_blight": {
+            "plant": "Tomato",
+            "diagnosis": "Early Blight",
+            "symptoms": "Dark circular spots with concentric rings.",
+            "treatment": "Remove infected leaves and improve air circulation."
+        },
+
+        "Tomato___Late_blight": {
+            "plant": "Tomato",
+            "diagnosis": "Late Blight",
+            "symptoms": "Dark brown lesions may spread quickly across leaves.",
+            "treatment": "Remove affected leaves and consult an agricultural expert."
+        },
+
+        "Tomato___healthy": {
+            "plant": "Tomato",
+            "diagnosis": "Healthy",
+            "symptoms": "No major disease symptoms detected.",
+            "treatment": "Continue normal plant care."
+        }
+
+    }
+
+
+    # Exact information available
+    if disease in info:
+        return info[disease]
+
+
+    # Default information for all other classes
+
+    parts = disease.split("___")
+
+
+    plant = parts[0].replace(
+        "_",
+        " "
+    )
+
+
+    if len(parts) > 1:
+
+        diagnosis = parts[1].replace(
+            "_",
+            " "
+        )
+
+    else:
+
+        diagnosis = disease.replace(
+            "_",
+            " "
+        )
+
+
+    return {
+
+        "plant": plant,
+
+        "diagnosis": diagnosis,
+
+        "symptoms":
+        "Check the plant for unusual spots, discoloration, yellowing or leaf damage.",
+
+        "treatment":
+        "Remove severely affected leaves, maintain plant hygiene and consult an agricultural expert if necessary."
+
+    }
+
+
+# ==========================================
+# IMAGE PREPROCESSING
+# ==========================================
+
+def prepare_image(image_path):
+
+    image = Image.open(
+        image_path
+    ).convert("RGB")
+
+
+    image = image.resize(
+        (IMG_WIDTH, IMG_HEIGHT)
+    )
+
+
+    image_array = np.array(
+        image,
+        dtype=np.float32
+    )
+
+
+    # IMPORTANT:
+    # Do NOT divide by 255 here if your model
+    # already contains Rescaling(1./255)
+
+
+    image_array = np.expand_dims(
+        image_array,
+        axis=0
+    )
+
+
+    return image_array
+
+
+# ==========================================
+# HOME PAGE
+# ==========================================
 
 @app.route("/")
 def home():
@@ -224,102 +303,90 @@ def home():
     )
 
 
-# =========================================================
-# PREDICT
-# =========================================================
+# ==========================================
+# PREDICTION
+# ==========================================
 
-@app.route("/predict", methods=["POST"])
+@app.route(
+    "/predict",
+    methods=["POST"]
+)
 def predict():
-
-    if "image" not in request.files:
-
-        return "Please select an image."
-
-
-    image = request.files["image"]
-
-
-    if image.filename == "":
-
-        return "Please select an image."
-
-
-    # -----------------------------------------------------
-    # Generate unique filename
-    # -----------------------------------------------------
-
-    original_name = secure_filename(
-        image.filename
-    )
-
-    extension = os.path.splitext(
-        original_name
-    )[1].lower()
-
-
-    if extension not in [
-        ".jpg",
-        ".jpeg",
-        ".png",
-        ".webp"
-    ]:
-
-        return "Invalid image format."
-
-
-    filename = (
-        str(uuid.uuid4())
-        + extension
-    )
-
-
-    filepath = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        filename
-    )
-
-
-    image.save(filepath)
-
 
     try:
 
-        # -------------------------------------------------
-        # IMAGE PROCESSING
-        # -------------------------------------------------
+        # ----------------------------------
+        # CHECK IMAGE
+        # ----------------------------------
 
-        img = Image.open(
-            filepath
-        ).convert("RGB")
+        if "image" not in request.files:
 
-
-        img = img.resize(
-            (
-                IMG_WIDTH,
-                IMG_HEIGHT
+            return (
+                "Error: No image uploaded",
+                400
             )
+
+
+        file = request.files["image"]
+
+
+        if file.filename == "":
+
+            return (
+                "Error: Please select an image",
+                400
+            )
+
+
+        if not allowed_file(
+            file.filename
+        ):
+
+            return (
+                "Error: Invalid image format",
+                400
+            )
+
+
+        # ----------------------------------
+        # SAVE IMAGE
+        # ----------------------------------
+
+        original_filename = secure_filename(
+            file.filename
         )
 
 
-        img_array = np.array(
-            img
+        unique_filename = (
+            str(uuid.uuid4())
+            + "_"
+            + original_filename
         )
 
 
-        img_array = (
-            img_array / 255.0
+        image_path = os.path.join(
+            app.config["UPLOAD_FOLDER"],
+            unique_filename
         )
 
 
-        img_array = np.expand_dims(
-            img_array,
-            axis=0
+        file.save(
+            image_path
         )
 
 
-        # -------------------------------------------------
-        # AI PREDICTION
-        # -------------------------------------------------
+        # ----------------------------------
+        # PREPARE IMAGE
+        # ----------------------------------
+
+        img_array = prepare_image(
+            image_path
+        )
+
+
+        # ----------------------------------
+        # MODEL PREDICTION
+        # ----------------------------------
 
         predictions = model.predict(
             img_array,
@@ -327,9 +394,16 @@ def predict():
         )
 
 
-        predicted_index = np.argmax(
-            predictions[0]
+        predicted_index = int(
+            np.argmax(
+                predictions[0]
+            )
         )
+
+
+        confidence = float(
+            predictions[0][predicted_index]
+        ) * 100
 
 
         disease = class_names[
@@ -337,638 +411,160 @@ def predict():
         ]
 
 
-        confidence = float(
-            predictions[0][
-                predicted_index
-            ]
-        ) * 100
+        # ----------------------------------
+        # TOP 5 PREDICTIONS
+        # ----------------------------------
+
+        top_indices = np.argsort(
+            predictions[0]
+        )[-5:][::-1]
 
 
-        disease_display = (
-            disease
-            .replace("___", " - ")
-            .replace("_", " ")
-        )
+        top_predictions = []
 
 
-        # -------------------------------------------------
-        # DISEASE INFO
-        # -------------------------------------------------
+        for i in top_indices:
 
-        info = DISEASE_INFO.get(
+            top_predictions.append({
 
-            disease,
+                "disease":
+                class_names[int(i)],
 
-            {
-                "symptoms":
-                    "The AI model detected a condition "
-                    "associated with this class.",
-
-                "treatment":
-                    "Remove severely affected plant parts "
-                    "where appropriate and maintain good "
-                    "plant-care practices.",
-
-                "prevention":
-                    "Maintain proper watering, sunlight, "
-                    "air circulation and regular monitoring.",
-
-                "severity":
-                    "Medium"
-            }
-        )
-
-
-        severity = info[
-            "severity"
-        ]
-
-
-        # -------------------------------------------------
-        # SAVE TO DATABASE
-        # -------------------------------------------------
-
-        connection = sqlite3.connect(
-            DATABASE
-        )
-
-        cursor = connection.cursor()
-
-
-        cursor.execute(
-            """
-            INSERT INTO scans
-            (
-                filename,
-                disease,
-                confidence,
-                severity,
-                symptoms,
-                treatment,
-                prevention,
-                created_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-
-            (
-                filename,
-                disease_display,
-                round(confidence, 2),
-                severity,
-                info["symptoms"],
-                info["treatment"],
-                info["prevention"],
-                datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
+                "confidence":
+                round(
+                    float(predictions[0][i]) * 100,
+                    2
                 )
-            )
+
+            })
+
+
+        # ----------------------------------
+        # GET DISEASE INFORMATION
+        # ----------------------------------
+
+        info = get_disease_info(
+            disease
         )
 
 
-        scan_id = cursor.lastrowid
+        # ----------------------------------
+        # DEBUG TERMINAL OUTPUT
+        # ----------------------------------
+
+        print("\n" + "=" * 60)
+
+        print("PREDICTION RESULT")
+
+        print("=" * 60)
 
 
-        connection.commit()
+        print(
+            "Uploaded image:",
+            unique_filename
+        )
 
-        connection.close()
+
+        print(
+            "Predicted index:",
+            predicted_index
+        )
 
 
-        # -------------------------------------------------
+        print(
+            "Predicted disease:",
+            disease
+        )
+
+
+        print(
+            "Confidence:",
+            round(confidence, 2),
+            "%"
+        )
+
+
+        print("\nTOP 5 PREDICTIONS:")
+
+
+        for prediction in top_predictions:
+
+            print(
+
+                prediction["disease"],
+
+                "=>",
+
+                prediction["confidence"],
+
+                "%"
+
+            )
+
+
+        print("=" * 60 + "\n")
+
+
+        # ----------------------------------
         # RESULT PAGE
-        # -------------------------------------------------
+        # ----------------------------------
 
         return render_template(
 
             "result.html",
 
-            image=filename,
+            image=unique_filename,
 
-            disease=disease_display,
+            disease=disease,
 
             confidence=round(
                 confidence,
                 2
             ),
 
-            severity=severity,
+            plant=info["plant"],
 
-            symptoms=info[
-                "symptoms"
-            ],
+            diagnosis=info["diagnosis"],
 
-            treatment=info[
-                "treatment"
-            ],
+            symptoms=info["symptoms"],
 
-            prevention=info[
-                "prevention"
-            ],
+            treatment=info["treatment"],
 
-            scan_id=scan_id
+            top_predictions=top_predictions
+
         )
 
 
     except Exception as e:
 
         print(
-            "Prediction error:",
+            "Prediction Error:",
             str(e)
         )
 
 
-        return f"""
-        <h2>Prediction Error</h2>
+        return (
 
-        <p>{str(e)}</p>
+            "Prediction Error: "
+            + str(e),
 
-        <a href="/">
-            Go Back
-        </a>
-        """
+            500
 
-
-# =========================================================
-# HISTORY
-# =========================================================
-
-@app.route("/history")
-def history():
-
-    connection = sqlite3.connect(
-        DATABASE
-    )
-
-    connection.row_factory = sqlite3.Row
-
-    cursor = connection.cursor()
-
-
-    cursor.execute(
-        """
-        SELECT *
-        FROM scans
-        ORDER BY id DESC
-        """
-    )
-
-
-    scans = cursor.fetchall()
-
-    connection.close()
-
-
-    return render_template(
-        "history.html",
-        scans=scans
-    )
-
-
-# =========================================================
-# DELETE ONE HISTORY
-# =========================================================
-
-@app.route(
-    "/history/delete/<int:scan_id>",
-    methods=["POST"]
-)
-def delete_history(scan_id):
-
-    connection = sqlite3.connect(
-        DATABASE
-    )
-
-    cursor = connection.cursor()
-
-
-    cursor.execute(
-        "SELECT filename FROM scans WHERE id = ?",
-        (scan_id,)
-    )
-
-
-    result = cursor.fetchone()
-
-
-    if result:
-
-        filename = result[0]
-
-        filepath = os.path.join(
-            UPLOAD_FOLDER,
-            filename
         )
 
 
-        if os.path.exists(filepath):
-
-            os.remove(filepath)
-
-
-    cursor.execute(
-        "DELETE FROM scans WHERE id = ?",
-        (scan_id,)
-    )
-
-
-    connection.commit()
-
-    connection.close()
-
-
-    return redirect(
-        url_for("history")
-    )
-
-
-# =========================================================
-# CLEAR HISTORY
-# =========================================================
-
-@app.route(
-    "/history/clear",
-    methods=["POST"]
-)
-def clear_history():
-
-    connection = sqlite3.connect(
-        DATABASE
-    )
-
-    cursor = connection.cursor()
-
-
-    cursor.execute(
-        "SELECT filename FROM scans"
-    )
-
-
-    files = cursor.fetchall()
-
-
-    for file in files:
-
-        filepath = os.path.join(
-            UPLOAD_FOLDER,
-            file[0]
-        )
-
-
-        if os.path.exists(filepath):
-
-            os.remove(filepath)
-
-
-    cursor.execute(
-        "DELETE FROM scans"
-    )
-
-
-    connection.commit()
-
-    connection.close()
-
-
-    return redirect(
-        url_for("history")
-    )
-
-
-# =========================================================
-# PDF REPORT
-# =========================================================
-
-@app.route(
-    "/download-report/<int:scan_id>"
-)
-def download_report(scan_id):
-
-    connection = sqlite3.connect(
-        DATABASE
-    )
-
-    connection.row_factory = sqlite3.Row
-
-    cursor = connection.cursor()
-
-
-    cursor.execute(
-        "SELECT * FROM scans WHERE id = ?",
-        (scan_id,)
-    )
-
-
-    scan = cursor.fetchone()
-
-    connection.close()
-
-
-    if not scan:
-
-        return "Report not found."
-
-
-    pdf_filename = (
-        f"plant_disease_report_{scan_id}.pdf"
-    )
-
-
-    pdf_path = os.path.join(
-        REPORT_FOLDER,
-        pdf_filename
-    )
-
-
-    # -----------------------------------------------------
-    # PDF DOCUMENT
-    # -----------------------------------------------------
-
-    document = SimpleDocTemplate(
-        pdf_path,
-        pagesize=A4,
-        rightMargin=45,
-        leftMargin=45,
-        topMargin=45,
-        bottomMargin=45
-    )
-
-
-    styles = getSampleStyleSheet()
-
-
-    title_style = styles[
-        "Title"
-    ]
-
-    title_style.alignment = (
-        TA_CENTER
-    )
-
-
-    heading_style = styles[
-        "Heading2"
-    ]
-
-
-    normal_style = styles[
-        "BodyText"
-    ]
-
-
-    elements = []
-
-
-    # -----------------------------------------------------
-    # TITLE
-    # -----------------------------------------------------
-
-    elements.append(
-
-        Paragraph(
-            "Plant Disease AI",
-            title_style
-        )
-
-    )
-
-
-    elements.append(
-        Spacer(1, 10)
-    )
-
-
-    elements.append(
-
-        Paragraph(
-            "AI Plant Health Diagnosis Report",
-            heading_style
-        )
-
-    )
-
-
-    elements.append(
-        Spacer(1, 20)
-    )
-
-
-    # -----------------------------------------------------
-    # SUMMARY TABLE
-    # -----------------------------------------------------
-
-    summary_data = [
-
-        [
-            "Disease / Class",
-            scan["disease"]
-        ],
-
-        [
-            "Confidence",
-            f'{scan["confidence"]}%'
-        ],
-
-        [
-            "Severity",
-            scan["severity"]
-        ],
-
-        [
-            "Date",
-            scan["created_at"]
-        ]
-
-    ]
-
-
-    summary_table = Table(
-        summary_data,
-        colWidths=[
-            130,
-            340
-        ]
-    )
-
-
-    summary_table.setStyle(
-
-        TableStyle([
-
-            (
-                "BACKGROUND",
-                (0,0),
-                (0,-1),
-                colors.HexColor(
-                    "#E7F5EA"
-                )
-            ),
-
-            (
-                "TEXTCOLOR",
-                (0,0),
-                (0,-1),
-                colors.HexColor(
-                    "#126B35"
-                )
-            ),
-
-            (
-                "GRID",
-                (0,0),
-                (-1,-1),
-                0.5,
-                colors.grey
-            ),
-
-            (
-                "VALIGN",
-                (0,0),
-                (-1,-1),
-                "TOP"
-            ),
-
-            (
-                "PADDING",
-                (0,0),
-                (-1,-1),
-                8
-            )
-
-        ])
-
-    )
-
-
-    elements.append(
-        summary_table
-    )
-
-
-    elements.append(
-        Spacer(1, 25)
-    )
-
-
-    # -----------------------------------------------------
-    # SYMPTOMS
-    # -----------------------------------------------------
-
-    elements.append(
-
-        Paragraph(
-            "Symptoms",
-            heading_style
-        )
-
-    )
-
-
-    elements.append(
-        Paragraph(
-            scan["symptoms"],
-            normal_style
-        )
-    )
-
-
-    elements.append(
-        Spacer(1, 18)
-    )
-
-
-    # -----------------------------------------------------
-    # TREATMENT
-    # -----------------------------------------------------
-
-    elements.append(
-
-        Paragraph(
-            "Treatment",
-            heading_style
-        )
-
-    )
-
-
-    elements.append(
-        Paragraph(
-            scan["treatment"],
-            normal_style
-        )
-    )
-
-
-    elements.append(
-        Spacer(1, 18)
-    )
-
-
-    # -----------------------------------------------------
-    # PREVENTION
-    # -----------------------------------------------------
-
-    elements.append(
-
-        Paragraph(
-            "Prevention",
-            heading_style
-        )
-
-    )
-
-
-    elements.append(
-        Paragraph(
-            scan["prevention"],
-            normal_style
-        )
-    )
-
-
-    elements.append(
-        Spacer(1, 25)
-    )
-
-
-    # -----------------------------------------------------
-    # DISCLAIMER
-    # -----------------------------------------------------
-
-    elements.append(
-
-        Paragraph(
-            "<b>Important:</b> This AI result is an "
-            "image-based prediction intended for "
-            "informational purposes. For serious crop "
-            "problems, confirm the diagnosis with a "
-            "qualified agricultural professional.",
-            normal_style
-        )
-
-    )
-
-
-    # -----------------------------------------------------
-    # BUILD PDF
-    # -----------------------------------------------------
-
-    document.build(
-        elements
-    )
-
-
-    return send_file(
-        pdf_path,
-        as_attachment=True
-    )
-
-
-# =========================================================
-# RUN
-# =========================================================
+# ==========================================
+# RUN APPLICATION
+# ==========================================
 
 if __name__ == "__main__":
 
     app.run(
-        host="0.0.0.0",port=5000,debug=True
+
+        debug=True,
+
+        host="0.0.0.0",
+
+        port=5000
+
     )
